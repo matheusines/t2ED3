@@ -38,6 +38,7 @@ void escreverCabecalhoBin(FILE *fp, Cabecalho *header) {
     }
 }
 
+
 // Função para ler o cabeçalho de um arquivo binário e ignorar o lixo
 void lerCabecalhoBin(FILE *fp, Cabecalho *header) {
     if (fp == NULL || header == NULL) return; // Verifica se o arquivo ou o cabeçalho são válidos
@@ -54,4 +55,31 @@ void lerCabecalhoBin(FILE *fp, Cabecalho *header) {
     long int currentPos = ftell(fp);                      // Obtém a posição atual no arquivo
     long int endOfHeaderPage = PAGE_SIZE;                 // Define o final da página (1600 bytes)
     fseek(fp, endOfHeaderPage - currentPos, SEEK_CUR);    // Move o ponteiro do arquivo para pular o lixo
+}
+
+//--------------------------------------------------------------TRABALHO 2--------------------------------------------------------------
+
+
+CabecalhoArvoreB inicializarCabecalhoArvoreB() {
+    CabecalhoArvoreB headerArvoreB;          // Criação da estrutura de cabeçalho
+    headerArvoreB.status = '0';       // Status '0' indica que o arquivo está inconsistente
+    headerArvoreB.noRaiz = -1;
+    headerArvoreB.RRNproxNo = 0;
+    return headerArvoreB;             // Retorna o cabeçalho inicializado
+}
+
+// Função para escrever o cabeçalho em um arquivo binário
+void escreverCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *header) {
+    if (fp == NULL) return;    // Verifica se o ponteiro do arquivo é válido
+
+    // Escreve os campos do cabeçalho no arquivo binário
+    fwrite(&header->status, sizeof(char), 1, fp);         
+    fwrite(&header->noRaiz, sizeof(int), 1, fp);
+    fwrite(&header->RRNproxNo, sizeof(int), 1, fp);            
+
+    // Preenche o restante da página de 84 bytes com lixo (caractere '$')
+    char lixo = TRASH;
+    for (int i = 0; i < 83; i++) {   // 1600 - tamanho dos campos já escritos = 1579 bytes de lixo
+        fwrite(&lixo, sizeof(char), 1, fp);
+    }
 }

@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include "cabecalho.h"
 
+#define ORDEM 5
+
 typedef struct {
     // Campos de tamanho fixo
     char removido;          // '0' não removido, '1' removido logicamente (Campo de controle)
@@ -21,6 +23,16 @@ typedef struct {
     char *alimento;         // Alimento da espécie
 } Registro;
 
+typedef struct  {
+    
+    int folha;
+    int nroChavesIndexadas;
+    int RRNdoNo;
+    int ponteiros [ORDEM];
+    long chaves [ORDEM-1];
+    long referencias [ORDEM-1];
+
+} RegistroArvoreB;
 
 
 /**
@@ -94,5 +106,7 @@ void inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header);
  * @param arquivoCompactado Ponteiro para o arquivo compactado que será gerado.
  */
 void compactarArquivoBinario(FILE *arquivoOriginal, FILE *arquivoCompactado);
+
+
 
 #endif

@@ -48,6 +48,18 @@ int main() {
             funcionalidade6();     // Chama a função `funcionalidade6()`
             break;                 
 
+        case 7:                    // Caso o usuário insira 7
+            funcionalidade7();     // Chama a função `funcionalidade7()`
+            break;
+
+        case 8:                    // Caso o usuário insira 8
+            funcionalidade8();     // Chama a função `funcionalidade8()`
+            break;
+
+
+        case 9:                    // Caso o usuário insira 9
+            funcionalidade9();     // Chama a função `funcionalidade9()`
+            break;
         default:                   // Caso o usuário insira qualquer outro valor que não esteja entre 1 e 6
             break;                 // Nenhuma ação é realizada.
     }

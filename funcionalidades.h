@@ -21,4 +21,11 @@ void funcionalidade5();
 // Função que realiza a compactação do arquivo binário, removendo fisicamente os registros logicamente removidos.
 void funcionalidade6();
 
+
+void funcionalidade7();
+
+void funcionalidade8();
+
+void funcionalidade9();
+
 #endif // FUNCIONALIDADES_H

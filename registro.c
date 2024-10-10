@@ -494,3 +494,34 @@ void inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header) {
     }
 
 }
+
+//------------------------------------------------------ TRABALHO 2 ------------------------------------------------------ 
+
+// Função para criar um novo RegistroArvoreB com valores padrão
+// A função aloca memória para o registro e inicializa seus campos com valores padrão
+RegistroArvoreB *criarRegistroArvoreB() {
+    // Aloca memória para um novo RegistroArvoreB
+    RegistroArvoreB *novoRegistro = (RegistroArvoreB *) malloc(sizeof(RegistroArvoreB));
+    
+    // Verifica se a alocação de memória foi bem-sucedida
+    if (novoRegistro == NULL) return NULL;
+
+    // Inicializa os valores padrão dos campos do registro
+    novoRegistro->folha = 1;  // Indica que o nó é folha
+    novoRegistro->nroChavesIndexadas = 0;  // Nenhuma chave inicialmente
+    novoRegistro->RRNdoNo = -1;  // Define um valor padrão para o RRN do nó
+
+    // Inicializa os arrays de chaves e referências com valores padrão
+    for (int i = 0; i < ORDEM - 1; i++) {
+        novoRegistro->chaves[i] = -1;  // Valor padrão de inicialização para as chaves
+        novoRegistro->referencias[i] = -1;  // Valor padrão de inicialização para as referências
+    }
+
+    // Inicializa o array de ponteiros com valores padrão
+    for (int i = 0; i < ORDEM; i++) {
+        novoRegistro->ponteiros[i] = -1;  // Valor padrão de inicialização para os ponteiros
+    }
+
+    // Retorna o ponteiro para o novo registro alocado e inicializado
+    return novoRegistro;
+}

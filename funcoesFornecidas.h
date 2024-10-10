@@ -4,5 +4,5 @@
 // Funções fornecidas
 void binarioNaTela(char *nomeArquivoBinario);
 void scan_quote_string(char *str);
-
+long converteNome(char* str);
 #endif // FUNCOES_FORNECIDAS_H
