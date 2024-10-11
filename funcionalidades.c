@@ -551,6 +551,7 @@ void funcionalidade7(){
                 primeiraPag->folha = '1';
                 primeiraPag->chaves[0] = chave;
                 primeiraPag->referencias[0] = byteOffset;
+                printf("%ld", byteOffset);
                 primeiraPag->nroChavesIndexadas = 1;
                 primeiraPag->RRNdoNo = headerArvoreB.RRNproxNo++;
 
@@ -564,7 +565,7 @@ void funcionalidade7(){
             } else {
                 // Se a chave não existe, insere na árvore-B
                 if (busca(arqIndice, headerArvoreB.noRaiz, chave) == NAO_ENCONTRADO) {
-                    int resultadoInsercao = inserir(arqIndice, headerArvoreB.noRaiz, chave, referenciaPromovida,
+                    int resultadoInsercao = inserir(arqIndice, headerArvoreB.noRaiz, chave, byteOffset,
                                 &chavePromovida, &referenciaPromovida, &filhoDireitaPromovida, &headerArvoreB.RRNproxNo);
 
 

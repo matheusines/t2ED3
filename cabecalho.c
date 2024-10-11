@@ -73,7 +73,7 @@ void escreverCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *header) {
     if (fp == NULL) return;    // Verifica se o ponteiro do arquivo é válido
 
     // Escreve os campos do cabeçalho no arquivo binário
-    printf("%s\n", &header->status);
+    
     fwrite(&header->status, sizeof(char), 1, fp);         
     fwrite(&header->noRaiz, sizeof(int), 1, fp);
     fwrite(&header->RRNproxNo, sizeof(int), 1, fp);            
