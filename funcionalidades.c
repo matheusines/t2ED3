@@ -534,7 +534,7 @@ void funcionalidade7(){
 
     long chavePromovida, referenciaPromovida; 
     int filhoDireitaPromovida;
-    int byteOffset = ftell(arqDados);
+    long byteOffset = ftell(arqDados);
 
     Registro *r = lerRegistroBin(arqDados);
     // Leitura do arquivo de dados e inserção na árvore-B

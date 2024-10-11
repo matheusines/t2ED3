@@ -35,10 +35,11 @@ void split(FILE *arqIndice, long chaveInserir, long referenciaInserir, int rrnFi
     long referencias[ORDEM];
     int ponteiros[ORDEM + 1];
 
+
     int i, posInserir;
 
     // Find the position to insert the new key
-    for (posInserir = 0; posInserir < pagina->nroChavesIndexadas && pagina->chaves[posInserir] < chaveInserir; posInserir++);
+    for (posInserir = 0; posInserir < (pagina->nroChavesIndexadas) && pagina->chaves[posInserir] < chaveInserir; posInserir++);
 
     // Copy existing keys and pointers to temporary arrays
     for (i = 0; i < posInserir; i++) {
@@ -107,9 +108,10 @@ void escrevePaginaBin(FILE *fp, RegistroArvoreB *pag) {
     
     int i;
     for( i = 0; i < ORDEM - 1; i++) {
-        fwrite(&pag->chaves[i], sizeof(int), 1, fp);
-        fwrite(&pag->referencias[i], sizeof(int), 1, fp);
         fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
+        fwrite(&pag->chaves[i], sizeof(long), 1, fp);
+        fwrite(&pag->referencias[i], sizeof(long), 1, fp);
+        //fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
     }
     fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
     
@@ -125,7 +127,7 @@ int busca(FILE *arqIndice, int RRNAtual, long chave) {
     for (pos = 0; pos < paginaAtual->nroChavesIndexadas && chave > paginaAtual->chaves[pos]; pos++);
 
     if (pos < paginaAtual->nroChavesIndexadas && chave == paginaAtual->chaves[pos]) {
-        int referencia = paginaAtual->referencias[pos];
+        long referencia = paginaAtual->referencias[pos];
         free(paginaAtual);
         return referencia;
     } else {
@@ -151,9 +153,10 @@ RegistroArvoreB *lePaginaBin(FILE *fp) {
     fread(&pag->RRNdoNo, sizeof(int), 1, fp);
     int i;
     for (i = 0; i < ORDEM - 1; i++) {
-        fread(&pag->chaves[i], sizeof(int), 1, fp);
-        fread(&pag->referencias[i], sizeof(int), 1, fp);
         fread(&pag->ponteiros[i], sizeof(int), 1, fp);
+        fread(&pag->chaves[i], sizeof(long), 1, fp);
+        fread(&pag->referencias[i], sizeof(long), 1, fp);
+        
     }
 
     fread(&pag->ponteiros[i], sizeof(int), 1, fp);
