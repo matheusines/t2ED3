@@ -505,7 +505,7 @@ void funcionalidade7(){
 
     Cabecalho headerBin = inicializarCabecalho();  // Inicializa o cabeçalho
     CabecalhoArvoreB headerArvoreB = inicializarCabecalhoArvoreB();
-    
+
     char nomeArqDados[30];
     char nomeArqIndice[30];
 
@@ -523,6 +523,7 @@ void funcionalidade7(){
 
     if (headerBin.status == 0) {
         printf("Falha no processamento do arquivo.");
+        fclose(arqDados);
         return; // erro
     }
 
@@ -531,19 +532,14 @@ void funcionalidade7(){
     // escreve o cabecalho para deixar seu espaco reservado
     escreverCabecalhoArvoreB(arqIndice, &headerArvoreB);
 
-    int *chavePromovida = (int *) malloc(sizeof(int));
-    int *referenciaPromovida = (int *) malloc(sizeof(int));
-    int *filhoDireitoPromovida = (int *) malloc(sizeof(int));
-
+    long chavePromovida, referenciaPromovida; 
+    int filhoDireitaPromovida;
     int byteOffset = ftell(arqDados);
 
     Registro *r = lerRegistroBin(arqDados);
     // Leitura do arquivo de dados e inserção na árvore-B
-    int i = 0;
-    //r != NULL
     while (r != NULL) {
-        byteOffset = ftell(arqDados);
-        
+
         if (r->removido == '0'){
             // Converte o nome para o tipo `long` para ser a chave
             long chave = converteNome(r->nome);
@@ -552,68 +548,59 @@ void funcionalidade7(){
             if (headerArvoreB.noRaiz == -1) {
                 // Inicializa a primeira página (raiz) se a árvore estiver vazia
                 RegistroArvoreB *primeiraPag = criaPagina();
-                
-                primeiraPag->folha = 1;
+                primeiraPag->folha = '1';
                 primeiraPag->chaves[0] = chave;
                 primeiraPag->referencias[0] = byteOffset;
                 primeiraPag->nroChavesIndexadas = 1;
-                primeiraPag->RRNdoNo = 0;
+                primeiraPag->RRNdoNo = headerArvoreB.RRNproxNo++;
 
+                // Posiciona o ponteiro do arquivo antes de escrever a raiz
+                fseek(arqIndice, OFFSET_CABECALHO_ARVB + (primeiraPag->RRNdoNo * TAM_PAGINA), SEEK_SET);
                 escrevePaginaBin(arqIndice, primeiraPag);
-                headerArvoreB.noRaiz = 0;
-                headerArvoreB.RRNproxNo = 1;
-                //printf("entrei");
-                free(primeiraPag);
 
+                headerArvoreB.noRaiz = primeiraPag->RRNdoNo;
+
+                free(primeiraPag);
             } else {
                 // Se a chave não existe, insere na árvore-B
                 if (busca(arqIndice, headerArvoreB.noRaiz, chave) == NAO_ENCONTRADO) {
-                    
-                    int resultadoInsercao = inserir(arqIndice, headerArvoreB.noRaiz, chave, byteOffset, chavePromovida, referenciaPromovida, filhoDireitoPromovida, &headerArvoreB.RRNproxNo);
-                    
+                    int resultadoInsercao = inserir(arqIndice, headerArvoreB.noRaiz, chave, referenciaPromovida,
+                                &chavePromovida, &referenciaPromovida, &filhoDireitaPromovida, &headerArvoreB.RRNproxNo);
+
+
                     if (resultadoInsercao == PROMOCAO) {
-                        // Cria uma nova raiz se houver promoção
+                        // Create a new root
                         RegistroArvoreB *novaRaiz = criaPagina();
-
-                        // Atribua a chave e referência promovidas à nova raiz
-                        novaRaiz->chaves[0] = *chavePromovida;
-                        novaRaiz->referencias[0] = *referenciaPromovida;
-
-                        // Atualiza ponteiros para o nó antigo e o novo nó promovido
-                        novaRaiz->ponteiros[0] = headerArvoreB.noRaiz;  // Antiga raiz à esquerda
-                        printf("%d", headerArvoreB.noRaiz);
-                        novaRaiz->ponteiros[1] = *filhoDireitoPromovida;  // Filho direito promovido
-
-                        // Atualiza a contagem de chaves na nova raiz
+                        novaRaiz->chaves[0] = chavePromovida;
+                        novaRaiz->referencias[0] = referenciaPromovida;
+                        novaRaiz->ponteiros[0] = headerArvoreB.noRaiz;
+                        novaRaiz->ponteiros[1] = filhoDireitaPromovida;
                         novaRaiz->nroChavesIndexadas = 1;
-                        novaRaiz->folha = 0;  // A nova raiz não é folha
+                        novaRaiz->folha = '0';
+                        novaRaiz->RRNdoNo = headerArvoreB.RRNproxNo++;
 
-                        //printf("RRNproxNo antes do incremento: %d\n", headerArvoreB.RRNproxNo);
-                        
-                        novaRaiz->RRNdoNo = (ftell(arqIndice) / TAM_PAGINA) - 1; 
-                        headerArvoreB.RRNproxNo = (ftell(arqIndice) / TAM_PAGINA) - 1;
-                        
-                        // Escreve a nova raiz no final do arquivo
-                        fseek(arqIndice, 0, SEEK_END);
+                        // Write new root to file
+                        fseek(arqIndice, OFFSET_CABECALHO_ARVB + novaRaiz->RRNdoNo * TAM_PAGINA, SEEK_SET);
                         escrevePaginaBin(arqIndice, novaRaiz);
 
-                        // Atualiza o número da nova raiz no cabeçalho
                         headerArvoreB.noRaiz = novaRaiz->RRNdoNo;
-                        
-                        // Libera a memória alocada para novaRaiz
                         free(novaRaiz);
                     }
+
+
                 }
             }
         }
 
         // Atualiza o byte offset para o próximo registro
-        liberarRegistro(r);  // Libera o registro após o uso
+        byteOffset = ftell(arqDados);
+        liberarRegistro(r);
         r = lerRegistroBin(arqDados);
     }
 
+    liberarRegistro(r);
     // Marca o arquivo de índice como consistente e reescreve o cabeçalho
-    headerArvoreB.status = 1;
+    headerArvoreB.status = '1';
     fseek(arqIndice, 0, SEEK_SET);
     escreverCabecalhoArvoreB(arqIndice, &headerArvoreB);
 
@@ -624,7 +611,6 @@ void funcionalidade7(){
     // Exibe o arquivo binário de índice usando a função binarioNaTela
     binarioNaTela(nomeArqIndice);
 }
-
 
 
 //--------------------------------------------------------------- FUNCIONALIDADE 8 (RECUPERAÇÃO DOS DADOS) ---------------------------------------------------------------

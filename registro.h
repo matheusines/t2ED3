@@ -25,7 +25,7 @@ typedef struct {
 
 typedef struct  {
     
-    int folha;
+    char folha;
     int nroChavesIndexadas;
     int RRNdoNo;
     int ponteiros [ORDEM];

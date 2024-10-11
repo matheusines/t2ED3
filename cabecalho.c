@@ -73,13 +73,14 @@ void escreverCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *header) {
     if (fp == NULL) return;    // Verifica se o ponteiro do arquivo é válido
 
     // Escreve os campos do cabeçalho no arquivo binário
+    printf("%s\n", &header->status);
     fwrite(&header->status, sizeof(char), 1, fp);         
     fwrite(&header->noRaiz, sizeof(int), 1, fp);
     fwrite(&header->RRNproxNo, sizeof(int), 1, fp);            
 
     // Preenche o restante da página de 84 bytes com lixo (caractere '$')
     char lixo = TRASH;
-    for (int i = 0; i < 83; i++) {   // 1600 - tamanho dos campos já escritos = 1579 bytes de lixo
+    for (int i = 0; i < 84; i++) {   // 1600 - tamanho dos campos já escritos = 1579 bytes de lixo
         fwrite(&lixo, sizeof(char), 1, fp);
     }
 }

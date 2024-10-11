@@ -12,11 +12,14 @@ RegistroArvoreB *criaPagina();
 
 void escrevePaginaBin(FILE *fp, RegistroArvoreB *pag);
 
-int busca(FILE *arqIndice, int RRNAtual, int chave);
+int busca(FILE *arqIndice, int RRNAtual, long chave);
 
-int inserir(FILE *arqIndice, int RRNAtual, int chave, int referencia, int *chavePromovida, int *referenciaPromovida, int *filhoDireitoPromovida, int *proxRRNCabec);
+int inserir(FILE *arqIndice, int RRNAtual, long chave, long referencia,
+            long *chavePromovida, long *referenciaPromovida, int *filhoDireitaPromovida, int *proxRRNCabec);
 
-void split(FILE *arqIndice, int chaveInserir, int referenciaInserir, int rrnFilhoDireita, RegistroArvoreB *pagina, int *chavePromovida, int *referenciaPromovida, int *filhoDireitaPromovida, RegistroArvoreB *novaPagina);
+void split(FILE *arqIndice, long chaveInserir, long referenciaInserir, int rrnFilhoDireita,
+           RegistroArvoreB *pagina, long *chavePromovida, long *referenciaPromovida,
+           int *filhoDireitaPromovida, RegistroArvoreB *novaPagina, int *proxRRNCabec);
 
 RegistroArvoreB *lePaginaBin(FILE *fp);
 
