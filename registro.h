@@ -28,9 +28,9 @@ typedef struct  {
     char folha;
     int nroChavesIndexadas;
     int RRNdoNo;
-    int ponteiros [ORDEM];
-    long chaves [ORDEM-1];
-    long referencias [ORDEM-1];
+    int ponteiros [ORDEM+1];
+    long chaves [ORDEM];
+    long referencias [ORDEM];
 
 } RegistroArvoreB;
 
@@ -98,7 +98,7 @@ void removeRegistro(Registro *r, FILE *arquivoBin, int topo, long int byteOffset
  * @param r Ponteiro para o registro a ser inserido.
  * @param header Cabeçalho do arquivo binário que será atualizado.
  */
-void inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header);
+long inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header);
 
 /**
  * Função para compactar um arquivo binário, removendo registros logicamente removidos e gerando um novo arquivo compactado.

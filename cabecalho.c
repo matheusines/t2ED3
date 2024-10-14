@@ -84,3 +84,15 @@ void escreverCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *header) {
         fwrite(&lixo, sizeof(char), 1, fp);
     }
 }
+
+void lerCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *cabecalho) {
+    if (fp == NULL) return; // erro
+
+    // Ler os campos do cabeçalho
+    fread(&cabecalho->status, sizeof(char), 1, fp);
+    fread(&cabecalho->noRaiz, sizeof(int), 1, fp);
+    fread(&cabecalho->RRNproxNo, sizeof(int), 1, fp);
+
+    // Avança o ponteiro para o próximo campo, caso haja espaço de preenchimento no cabeçalho
+    fseek(fp, OFFSET_CABECALHO_ARVB, SEEK_SET);
+}

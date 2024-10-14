@@ -1,4 +1,4 @@
-#include <ctype.h>
+    #include <ctype.h>
 #include <string.h>
 #include "funcoesFornecidas.h"
 #include "registro.h"
@@ -327,6 +327,7 @@ Registro *lerRegistroBin(FILE *arquivo) {
 
     // Se o registro foi logicamente removido (r->removido == '1')
     if (r->removido == '1') {
+        
         // Pula os bytes restantes do registro (160 bytes no total)
         fseek(arquivo, posInicial + 160, SEEK_SET);
         liberarRegistro(r);  // Libera o registro
@@ -445,56 +446,56 @@ void compactarArquivoBinario(FILE *arquivoOriginal, FILE *arquivoCompactado) {
 }
 
 
-// Função para inserir um registro reutilizando registros logicamente removidos ou ao final do arquivo
-void inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header) {
-    // Se existirem registros logicamente removidos
+// Updated inserirRegistro to return the byte offset where the record was written
+long inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header) {
+    long byteOffset; // Initialize byteOffset variable
+
+    // If there are logically removed records, reuse them
     if (header->topo != -1) {
-        // Reutiliza registros logicamente removidos
-        int RRNRemovido = header->topo;  // RRN do topo da pilha de removidos
-        long int byteOffset = PAGE_SIZE + (RRNRemovido * 160);  // Calcula o byte offset correto
-        // Posiciona o ponteiro no arquivo para o registro removido
+        int RRNRemovido = header->topo;  // RRN of the top removed record
+        byteOffset = PAGE_SIZE + (RRNRemovido * 160);  // Calculate the byte offset for the removed record
         fseek(arquivo, byteOffset, SEEK_SET);
-        // Lê os unicos campos do registro removido (removido e encadeamento)
+        
+        // Read the removed marker and the next removed position
         char removido;
         int encadeamento;
         fread(&removido, sizeof(char), 1, arquivo);
         fread(&encadeamento, sizeof(int), 1, arquivo);
-        
-        // Atualiza o topo da pilha para o próximo registro removido
+
+        // Update the top of the removed records stack
         header->topo = encadeamento; 
         
-        // Reposiciona o ponteiro para o início do registro para reescrever o novo
+        // Position back at the start of this slot
         fseek(arquivo, byteOffset, SEEK_SET);
 
-        // Marca o registro como válido (não removido)
+        // Mark the record as valid
         r->removido = '0';  
-        r->encadeamento = -1;  // Não há encadeamento para um registro válido
+        r->encadeamento = -1;
 
-        // Escreve o novo registro no lugar do registro removido
+        // Write the new record in the location of the removed record
         escreverRegistro(arquivo, r);
 
-        // Atualiza o número de registros removidos
+        // Update the header's removed record count
         header->nroRegRem--;
-        // O proxRRN NÃO deve ser atualizado aqui
-
+        
     } else {
-        // Caso não haja registros removidos, insere ao final do arquivo
-        long int byteOffset = PAGE_SIZE + header->proxRRN * 160;  // Próximo byte offset
+        // No removed records, append at the end of the file
+        byteOffset = PAGE_SIZE + (header->proxRRN * 160);  // Calculate byte offset for new record
         fseek(arquivo, byteOffset, SEEK_SET);
 
-        // Marca o registro como válido
+        // Mark the record as valid
         r->removido = '0';
         r->encadeamento = -1;
 
-        // Escreve o novo registro no final do arquivo
+        // Write the new record
         escreverRegistro(arquivo, r);
 
-        header->proxRRN++; // Incrementa o valor do RRN
-        
+        // Update the RRN for the next record
+        header->proxRRN++;
     }
-
+    
+    return byteOffset; // Return the byte offset where the record was written
 }
-
 //------------------------------------------------------ TRABALHO 2 ------------------------------------------------------ 
 
 // Função para criar um novo RegistroArvoreB com valores padrão

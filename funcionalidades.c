@@ -392,7 +392,7 @@ void funcionalidade5() {
         }
 
         // Insere o registro reutilizando o espaço de registros removidos ou ao final do arquivo
-        inserirRegistro(arquivoBin, r, &header);
+        long byteOffSet = inserirRegistro(arquivoBin, r, &header);
         liberarRegistro(r);  // Libera a memória alocada para o registro
     }
 
@@ -501,127 +501,385 @@ void funcionalidade6() {
 //--------------------------------------------------------------- FUNCIONALIDADE 7 (CREATE INDEX) ---------------------------------------------------------------
 
 
-void funcionalidade7(){
-
-    Cabecalho headerBin = inicializarCabecalho();  // Inicializa o cabeçalho
+void funcionalidade7() {
+    // Inicializa os cabeçalhos para o arquivo de dados e o arquivo de índice da árvore B
+    Cabecalho headerBin = inicializarCabecalho();  
     CabecalhoArvoreB headerArvoreB = inicializarCabecalhoArvoreB();
 
+    // Declara variáveis para armazenar os nomes dos arquivos de dados e de índice
     char nomeArqDados[30];
     char nomeArqIndice[30];
 
+    // Lê os nomes dos arquivos de dados e de índice a partir da entrada do usuário
     scanf("%s", nomeArqDados);
     scanf("%s", nomeArqIndice);
 
+    // Abre o arquivo de dados em modo de leitura binária
     FILE *arqDados = fopen(nomeArqDados, "rb");
 
+    // Verifica se o arquivo de dados foi aberto corretamente
     if (arqDados == NULL) {
         printf("Falha no processamento do arquivo.");
-        return; // erro
+        return; // Encerrar a função em caso de erro
     }
 
+    // Lê o cabeçalho do arquivo de dados e armazena as informações em headerBin
     lerCabecalhoBin(arqDados, &headerBin);
 
+    // Verifica o status do cabeçalho do arquivo de dados
     if (headerBin.status == 0) {
         printf("Falha no processamento do arquivo.");
         fclose(arqDados);
-        return; // erro
+        return; // Encerrar a função em caso de erro no status do arquivo
     }
 
+    // Abre o arquivo de índice da árvore B em modo de escrita binária
     FILE *arqIndice = fopen(nomeArqIndice, "wb+");
 
-    // escreve o cabecalho para deixar seu espaco reservado
+    // Escreve o cabeçalho inicial da árvore B no arquivo de índice
     escreverCabecalhoArvoreB(arqIndice, &headerArvoreB);
 
+    // Declara variáveis para as operações de inserção e promoção
     long chavePromovida, referenciaPromovida; 
     int filhoDireitaPromovida;
-    long byteOffset = ftell(arqDados);
+    //long byteOffset = ftell(arqDados); // Armazena a posição inicial no arquivo de dados
 
-    Registro *r = lerRegistroBin(arqDados);
-    // Leitura do arquivo de dados e inserção na árvore-B
+    // Cria e lê o primeiro registro do arquivo de dados
+    Registro *r = criarRegistro();
+    r = lerRegistroBin(arqDados);
+    long byteOffset = ftell(arqDados) - 160; // Armazena a posição inicial no arquivo de dados
+    // Processa cada registro do arquivo de dados enquanto ele não for nulo
     while (r != NULL) {
-
-        if (r->removido == '0'){
-            // Converte o nome para o tipo `long` para ser a chave
+        long byteOffset = ftell(arqDados) - 160;
+        // Verifica se o registro não foi removido
+        if (r->removido == '0') {
+            // Converte o campo nome do registro para uma chave numérica
             long chave = converteNome(r->nome);
 
-            // Se o registro não está logicamente removido, insere na árvore-B
+            // Se a árvore B ainda não possui uma raiz
             if (headerArvoreB.noRaiz == -1) {
-                // Inicializa a primeira página (raiz) se a árvore estiver vazia
+                // Inicializa a primeira página da árvore B como raiz
                 RegistroArvoreB *primeiraPag = criaPagina();
-                primeiraPag->folha = '1';
-                primeiraPag->chaves[0] = chave;
-                primeiraPag->referencias[0] = byteOffset;
-                printf("%ld", byteOffset);
-                primeiraPag->nroChavesIndexadas = 1;
-                primeiraPag->RRNdoNo = headerArvoreB.RRNproxNo++;
-
-                // Posiciona o ponteiro do arquivo antes de escrever a raiz
+                primeiraPag->folha = '1'; // Marca a página como folha
+                primeiraPag->chaves[0] = chave; // Insere a chave na primeira posição
+                primeiraPag->referencias[0] = byteOffset; // Armazena o byteOffset do registro
+                primeiraPag->nroChavesIndexadas++; // Define o número de chaves indexadas como 1
+                primeiraPag->RRNdoNo = headerArvoreB.RRNproxNo++; // Atribui o próximo RRN
+                
+                // Posiciona o ponteiro no arquivo de índice e grava a página inicial
                 fseek(arqIndice, OFFSET_CABECALHO_ARVB + (primeiraPag->RRNdoNo * TAM_PAGINA), SEEK_SET);
                 escrevePaginaBin(arqIndice, primeiraPag);
-
-                headerArvoreB.noRaiz = primeiraPag->RRNdoNo;
-
-                free(primeiraPag);
+                headerArvoreB.noRaiz = primeiraPag->RRNdoNo; // Define o RRN da raiz da árvore B
+                free(primeiraPag); // Libera a memória da página
             } else {
-                // Se a chave não existe, insere na árvore-B
+                // Verifica se a chave não está presente na árvore
                 if (busca(arqIndice, headerArvoreB.noRaiz, chave) == NAO_ENCONTRADO) {
+                    // Realiza a inserção da chave na árvore
                     int resultadoInsercao = inserir(arqIndice, headerArvoreB.noRaiz, chave, byteOffset,
                                 &chavePromovida, &referenciaPromovida, &filhoDireitaPromovida, &headerArvoreB.RRNproxNo);
 
-
+                    // Se a inserção resulta em uma promoção (split)
                     if (resultadoInsercao == PROMOCAO) {
-                        // Create a new root
+                        // Cria uma nova raiz para a árvore B
                         RegistroArvoreB *novaRaiz = criaPagina();
-                        novaRaiz->chaves[0] = chavePromovida;
-                        novaRaiz->referencias[0] = referenciaPromovida;
-                        novaRaiz->ponteiros[0] = headerArvoreB.noRaiz;
-                        novaRaiz->ponteiros[1] = filhoDireitaPromovida;
-                        novaRaiz->nroChavesIndexadas = 1;
-                        novaRaiz->folha = '0';
-                        novaRaiz->RRNdoNo = headerArvoreB.RRNproxNo++;
+                        novaRaiz->chaves[0] = chavePromovida; // Atribui a chave promovida
+                        novaRaiz->referencias[0] = referenciaPromovida; // Atribui a referência promovida
+                        novaRaiz->ponteiros[0] = headerArvoreB.noRaiz; // Define o ponteiro para a raiz anterior
+                        novaRaiz->ponteiros[1] = filhoDireitaPromovida; // Define o ponteiro para o nó da direita
+                        novaRaiz->nroChavesIndexadas = 1; // Define o número de chaves na nova raiz
+                        novaRaiz->folha = '0'; // A nova raiz não é uma folha
+                        novaRaiz->RRNdoNo = headerArvoreB.RRNproxNo++; // Atribui o RRN à nova raiz
 
-                        // Write new root to file
+                        // Posiciona o ponteiro no arquivo de índice e grava a nova raiz
                         fseek(arqIndice, OFFSET_CABECALHO_ARVB + novaRaiz->RRNdoNo * TAM_PAGINA, SEEK_SET);
                         escrevePaginaBin(arqIndice, novaRaiz);
-
-                        headerArvoreB.noRaiz = novaRaiz->RRNdoNo;
-                        free(novaRaiz);
+                        headerArvoreB.noRaiz = novaRaiz->RRNdoNo; // Atualiza o RRN da raiz no cabeçalho
+                        free(novaRaiz); // Libera a memória da nova raiz
                     }
-
-
                 }
             }
         }
 
-        // Atualiza o byte offset para o próximo registro
-        byteOffset = ftell(arqDados);
-        liberarRegistro(r);
-        r = lerRegistroBin(arqDados);
+        // Atualiza o byteOffset para o próximo registro
+        
+        liberarRegistro(r); // Libera o registro atual
+        r = lerRegistroBin(arqDados); // Lê o próximo registro
     }
 
-    liberarRegistro(r);
-    // Marca o arquivo de índice como consistente e reescreve o cabeçalho
+    // Atualiza o status do cabeçalho da árvore B e grava no início do arquivo de índice
     headerArvoreB.status = '1';
     fseek(arqIndice, 0, SEEK_SET);
     escreverCabecalhoArvoreB(arqIndice, &headerArvoreB);
 
-    // Fecha os arquivos
+    // Fecha os arquivos de dados e de índice
     fclose(arqDados);
     fclose(arqIndice);
-
-    // Exibe o arquivo binário de índice usando a função binarioNaTela
+    // Exibe o conteúdo binário do arquivo de índice na tela
     binarioNaTela(nomeArqIndice);
 }
 
 
+
 //--------------------------------------------------------------- FUNCIONALIDADE 8 (RECUPERAÇÃO DOS DADOS) ---------------------------------------------------------------
 
-void funcionalidade8(){
+void funcionalidade8() {
+    char nomeArqDados[30], nomeArqIndice[30], nomeCampo[30], valorCampoStr[100];
+    long valorCampoLong;
 
+    // Leitura dos parâmetros
+    scanf("%s", nomeArqDados);
+    scanf("%s", nomeArqIndice);
+    scanf("%s", nomeCampo);
+    scan_quote_string(valorCampoStr);
+
+    // Converter o valor do campo 'nome' para long, como especificado
+    valorCampoLong = converteNome(valorCampoStr);
+
+    // Abrir o arquivo de índice em modo leitura binária
+    FILE *arqIndice = fopen(nomeArqIndice, "rb");
+    if (arqIndice == NULL) {
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+
+    // Ler o cabeçalho do índice e verificar o status
+    CabecalhoArvoreB cabecalhoArvore;
+    lerCabecalhoArvoreB(arqIndice, &cabecalhoArvore);
+    if (cabecalhoArvore.status == '0') {
+        printf("Falha no processamento do arquivo.");
+        fclose(arqIndice);
+        return;
+    } else if (cabecalhoArvore.noRaiz == -1) {
+        printf("Registro inexistente.");
+        fclose(arqIndice);
+        return;
+    }
+
+    // Buscar o valor da chave no índice
+    long byteOffset = busca(arqIndice, cabecalhoArvore.noRaiz, valorCampoLong);
+    if (byteOffset == NAO_ENCONTRADO) {
+        printf("Registro inexistente.");
+        fclose(arqIndice);
+        return;
+    }
+
+    // Abrir o arquivo de dados e ler o cabeçalho
+    FILE *arqDados = fopen(nomeArqDados, "rb");
+    if (arqDados == NULL) {
+        printf("Falha no processamento do arquivo.");
+        fclose(arqIndice);
+        return;
+    }
+
+    Cabecalho cabecalhoBin;
+    lerCabecalhoBin(arqDados, &cabecalhoBin);
+    if (cabecalhoBin.status == '0') {
+        printf("Falha no processamento do arquivo.");
+        fclose(arqIndice);
+        fclose(arqDados);
+        return;
+    }
+
+    // Posicionar no byte offset encontrado e ler o registro
+    fseek(arqDados, byteOffset, SEEK_SET);
+    Registro *r = lerRegistroBin(arqDados);
+    
+    if (r->removido == '0') {
+        // Exibir os dados do registro encontrado
+        if (r->nome[0] != '\0') printf("Nome: %s\n", r->nome);
+        if (r->especie[0] != '\0') printf("Especie: %s\n", r->especie);
+        if (r->tipo[0] != '\0') printf("Tipo: %s\n", r->tipo);
+        if (r->dieta[0] != '\0') printf("Dieta: %s\n", r->dieta);
+        if (r->habitat[0] != '\0') printf("Lugar que habitava: %s\n", r->habitat);
+        if (r->tamanho != -1) printf("Tamanho: %.1f m\n", r->tamanho);
+        if (r->velocidade != -1) printf("Velocidade: %d %cm/h\n", r->velocidade, r->unidadeMedida);
+        printf("\n");
+    } else {
+        printf("Registro inexistente.");
+    }
+
+    // Fechar arquivos e liberar memória
+    liberarRegistro(r);
+    fclose(arqIndice);
+    fclose(arqDados);
 }
+
 
 //--------------------------------------------------------------- FUNCIONALIDADE 9 (INSERT EXTENDIDA) ---------------------------------------------------------------
 
-void funcionalidade9(){
+void funcionalidade9() {
+    char nomeArqDados[30];
+    char nomeArqIndice[30];
+    
+    scanf("%s", nomeArqDados);
+    scanf("%s", nomeArqIndice);
 
+    FILE *arqDados = fopen(nomeArqDados, "rb+");
+    if (arqDados == NULL) {
+        printf("Falha no processamento do arquivo.");
+        return;
+    }
+
+    FILE *arqIndice = fopen(nomeArqIndice, "rb+");
+    if (arqIndice == NULL) {
+        printf("Falha no processamento do arquivo.");
+        fclose(arqDados);
+        return;
+    }
+
+    Cabecalho cabecalhoArqBin = inicializarCabecalho();
+    CabecalhoArvoreB cabecalhoArvB  = inicializarCabecalhoArvoreB() ;
+
+    lerCabecalhoBin(arqDados, &cabecalhoArqBin);
+    lerCabecalhoArvoreB(arqIndice, &cabecalhoArvB);
+
+    cabecalhoArqBin.status = '0';
+    cabecalhoArvB.status = '0';
+
+    int numInsercoes;
+    scanf("%d", &numInsercoes);
+
+    for (int i = 0; i < numInsercoes; i++) {
+        
+
+        Registro *r = criarRegistro();  // Cria um novo registro com valores padrão
+        char valorCampo[50];  // Buffer para armazenar os valores lidos (strings ou numéricos)
+
+        
+        scan_quote_string(valorCampo);  // Lê a string de tamanho variavel 'nome' 
+        if (strcmp(valorCampo, "NULO") == 0) {
+            strcpy(r->nome, "#");  // Se o valor for "NULO", insere '#'
+        } else {
+            strcpy(r->nome, valorCampo);  // Caso contrário, copia o valor lido
+        }
+
+        
+        scan_quote_string(valorCampo);  // Lê a string de tamanho variavel 'dieta' 
+        if (strcmp(valorCampo, "NULO") == 0) {
+            strcpy(r->dieta, "#");   // Se o valor for "NULO", insere '#'
+        } else {
+            strcpy(r->dieta, valorCampo);  // Caso contrário, copia o valor lido
+        }
+
+
+        scan_quote_string(valorCampo); // Lê a string de tamanho variavel 'habitat'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            strcpy(r->habitat, "#");  // Se o valor for "NULO", insere '#'
+        } else {
+            strcpy(r->habitat, valorCampo);  // Caso contrário, copia o valor lido
+        }
+
+        
+        scanf("%s", valorCampo);  // Lê o valor do campo 'populacao'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            r->populacao = -1;  // Se o valor for "NULO", define -1
+        } else {
+            r->populacao = atoi(valorCampo);  // Caso contrário, converte o valor lido para inteiro
+        }
+
+        
+        scan_quote_string(valorCampo); // Lê a string de tamanho variavel 'tipo' 
+        if (strcmp(valorCampo, "NULO") == 0) {
+            strcpy(r->tipo, "#");  // Se o valor for "NULO", insere '#'
+        } else {
+            strcpy(r->tipo, valorCampo);  // Caso contrário, copia o valor lido
+        }
+
+        
+        scanf("%s", valorCampo); // Lê o valor do campo 'velocidade'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            r->velocidade = -1;  // Se o valor for "NULO", define -1
+        } else {
+            r->velocidade = atoi(valorCampo);  // Converte para inteiro
+        }
+
+        
+        scanf("%s", valorCampo); // Lê o valor do campo 'unidadeMedida'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            r->unidadeMedida = '$';  // Atribui '$' para valores nulos
+        } else {
+            r->unidadeMedida = valorCampo[1];  // Atribui o seungdo caractere da string
+        }
+
+
+        scanf("%s", valorCampo); // Lê o valor do campo 'tamanho'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            r->tamanho = -1;  // Se o valor for "NULO", define -1
+        } else {
+            r->tamanho = atof(valorCampo);  // Caso contrário, converte para float
+        }
+
+        
+        scan_quote_string(valorCampo); // Lê a string de tamanho variavel 'especie'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            strcpy(r->especie, "#");  // Se o valor for "NULO", insere '#'
+        } else {
+            strcpy(r->especie, valorCampo);  // Caso contrário, copia o valor lido
+        }
+
+        
+        scan_quote_string(valorCampo); // Lê a string de tamanho variavel 'alimento'
+        if (strcmp(valorCampo, "NULO") == 0) {
+            strcpy(r->alimento, "#");  // Se o valor for "NULO", insere '#'
+        } else {
+            strcpy(r->alimento, valorCampo);  // Caso contrário, copia o valor lido
+        }
+
+        long chave = converteNome(r->nome); // Convert name to key
+        long byteOffset = inserirRegistro(arqDados, r, &cabecalhoArqBin); // Use returned byteOffset
+        byteOffset+=160;
+        if (byteOffset == ERRO) {
+            printf("Falha no processamento do arquivo.");
+            liberarRegistro(r);
+            fclose(arqDados);
+            fclose(arqIndice);
+            return;
+        }
+
+        if (cabecalhoArvB.noRaiz == -1) {
+            // Initialize the B-tree root page
+            RegistroArvoreB *primeiraPag = criaPagina();
+            primeiraPag->folha = '1';
+            primeiraPag->chaves[0] = chave;
+            primeiraPag->referencias[0] = byteOffset;
+            primeiraPag->nroChavesIndexadas = 1;
+            primeiraPag->RRNdoNo = cabecalhoArvB.RRNproxNo++;
+            escrevePaginaBin(arqIndice, primeiraPag);
+
+            cabecalhoArvB.noRaiz = primeiraPag->RRNdoNo;
+            free(primeiraPag);
+        } else {
+            long chavePromovida, referenciaPromovida;
+            int filhoDireitaPromovida;
+            
+            if (busca(arqIndice, cabecalhoArvB.noRaiz, chave) == NAO_ENCONTRADO) {
+                if (inserir(arqIndice, cabecalhoArvB.noRaiz, chave, byteOffset, &chavePromovida, &referenciaPromovida, &filhoDireitaPromovida, &cabecalhoArvB.RRNproxNo) == PROMOCAO) {
+                    RegistroArvoreB *novaRaiz = criaPagina();
+                    novaRaiz->chaves[0] = chavePromovida;
+                    novaRaiz->referencias[0] = referenciaPromovida;
+                    novaRaiz->ponteiros[0] = cabecalhoArvB.noRaiz;
+                    novaRaiz->ponteiros[1] = filhoDireitaPromovida;
+                    novaRaiz->nroChavesIndexadas = 1;
+                    novaRaiz->folha = '0';
+                    novaRaiz->RRNdoNo = cabecalhoArvB.RRNproxNo++;
+                    escrevePaginaBin(arqIndice, novaRaiz);
+                    
+                    cabecalhoArvB.noRaiz = novaRaiz->RRNdoNo;
+                    free(novaRaiz);
+                }
+            }
+        }
+        liberarRegistro(r);
+    }
+
+    cabecalhoArqBin.status = '1';
+    cabecalhoArvB.status = '1';
+    fseek(arqDados, 0, SEEK_SET);
+    escreverCabecalhoBin(arqDados, &cabecalhoArqBin);
+    fseek(arqIndice, 0, SEEK_SET);
+    escreverCabecalhoArvoreB(arqIndice, &cabecalhoArvB);
+
+    fclose(arqDados);
+    fclose(arqIndice);
+    binarioNaTela(nomeArqIndice);
 }

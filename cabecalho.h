@@ -53,5 +53,6 @@ CabecalhoArvoreB inicializarCabecalhoArvoreB();
 
 void escreverCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *header);
 
+void lerCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *cabecalho);
 
 #endif
