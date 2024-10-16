@@ -1,17 +1,18 @@
 #include <stdio.h>         
 #include <stdlib.h>        
-#include "funcionalidades.h" // Inclui o arquivo de cabeçalho "funcionalidades.h" onde as funções `funcionalidade1()`, `funcionalidade2()`, etc., estão declaradas.
+#include "funcionalidades.h" 
+
 
 /* 
 
 ___________________________________________________
 |                                                  |
 |. Bruno Tomé Rosa (Nº USP: 10276654)              |
-|    -> Atribuições: funcionalidades 2, 4, 6       |
+|    -> Atribuições: funcionalidades 7 e 9         |
 |    -> Conclusão: 100%                            |
 |                                                  |
 |. Matheus dos Santos Inês (Nº USP: 12546784)      |
-|    -> Atribuições: funcionalidades 1, 3, 5       |
+|    -> Atribuições: funcionalidades 8             |
 |    -> Conclusão: 100%                            |
 |                                                  |
 |__________________________________________________|
@@ -48,6 +49,18 @@ int main() {
             funcionalidade6();     // Chama a função `funcionalidade6()`
             break;                 
 
+
+/*
+
+**************************************************************************************************************************************
+*                                                                                                                                    *
+*                                                             TRABALHO 2                                                             *
+*                                                                                                                                    *
+**************************************************************************************************************************************
+
+*/
+
+
         case 7:                    // Caso o usuário insira 7
             funcionalidade7();     // Chama a função `funcionalidade7()`
             break;
@@ -60,7 +73,7 @@ int main() {
         case 9:                    // Caso o usuário insira 9
             funcionalidade9();     // Chama a função `funcionalidade9()`
             break;
-        default:                   // Caso o usuário insira qualquer outro valor que não esteja entre 1 e 6
+        default:                   // Caso o usuário insira qualquer outro valor que não esteja entre 1 e 9
             break;                 // Nenhuma ação é realizada.
     }
 }

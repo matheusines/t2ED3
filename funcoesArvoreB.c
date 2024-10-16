@@ -1,51 +1,13 @@
 #include "stdio.h"
 #include "stdlib.h"
 #include "funcoesFornecidas.h"
-#include "cabecalho.h"
-#include "registro.h"
+#include "cabecalhos.h"
+#include "registros.h"
 #include "funcoesArvoreB.h"
 
 
 
-
-
-RegistroArvoreB *criaPagina() {
-    RegistroArvoreB *novaPagina = (RegistroArvoreB *)malloc(sizeof(RegistroArvoreB));
-    novaPagina->nroChavesIndexadas = 0;
-    novaPagina->folha = '1'; // Assign '1' as a character to indicate a leaf node
-    novaPagina->RRNdoNo = -1;
-
-    for (int i = 0; i < ORDEM; i++) {
-        novaPagina->ponteiros[i] = -1;
-    }
-
-    for (int i = 0; i < ORDEM - 1; i++) {
-        novaPagina->chaves[i] = -1;
-        novaPagina->referencias[i] = -1;
-    }
-
-    return novaPagina;
-}
-
-
-
-void escrevePaginaBin(FILE *fp, RegistroArvoreB *pag) {
-    fwrite(&pag->folha, sizeof(char), 1, fp);
-    fwrite(&pag->nroChavesIndexadas, sizeof(int), 1, fp);
-    fwrite(&pag->RRNdoNo, sizeof(int), 1, fp);
-    
-    int i;
-    for( i = 0; i < ORDEM - 1; i++) {
-        fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
-        fwrite(&pag->chaves[i], sizeof(long), 1, fp);
-        fwrite(&pag->referencias[i], sizeof(long), 1, fp);
-        //fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
-    }
-    fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
-    
-}
-
-int busca(FILE *arqIndice, int RRNAtual, long chave) {
+long busca(FILE *arqIndice, int RRNAtual, long chave) {
     // Verifica se o RRNAtual é -1, indicando um nó inexistente ou folha final, e retorna um valor de "não encontrado".
     if (RRNAtual == -1) return NAO_ENCONTRADO;
 
@@ -53,8 +15,8 @@ int busca(FILE *arqIndice, int RRNAtual, long chave) {
     // Calcula o deslocamento com base no RRNAtual e o tamanho de uma página.
     fseek(arqIndice, OFFSET_CABECALHO_ARVB + RRNAtual * TAM_PAGINA, SEEK_SET);
 
-    // Lê o conteúdo da página no arquivo e carrega para a estrutura RegistroArvoreB.
-    RegistroArvoreB *paginaAtual = lePaginaBin(arqIndice);
+    // Lê o conteúdo da página no arquivo e carrega para a estrutura Pagina.
+    Pagina *paginaAtual = lePaginaBin(arqIndice);
 
     int pos;
     // Realiza uma busca sequencial nas chaves do nó atual para encontrar a posição onde a chave buscada pode estar.
@@ -80,40 +42,13 @@ int busca(FILE *arqIndice, int RRNAtual, long chave) {
         return resultado;  // Retorna o resultado da busca
     }
 }
-
-
-RegistroArvoreB *lePaginaBin(FILE *fp) {
-    if (fp == NULL) return NULL; // erro
-
-    RegistroArvoreB *pag = criaPagina();
-
-    // erro, nao ha mais o que ler
-    if (fread(&pag->folha, sizeof(char), 1, fp) == 0) {
-        free(pag);
-        return NULL;
-    }
-
-    fread(&pag->nroChavesIndexadas, sizeof(int), 1, fp);
-    fread(&pag->RRNdoNo, sizeof(int), 1, fp);
-    int i;
-    for (i = 0; i < ORDEM - 1; i++) {
-        fread(&pag->ponteiros[i], sizeof(int), 1, fp);
-        fread(&pag->chaves[i], sizeof(long), 1, fp);
-        fread(&pag->referencias[i], sizeof(long), 1, fp);
-        
-    }
-
-    fread(&pag->ponteiros[i], sizeof(int), 1, fp);
     
-
-    return pag;
-}
 
 
 
 void split(FILE *arqIndice, long chaveInserir, long referenciaInserir, int rrnFilhoDireita,
-           RegistroArvoreB *pagina, long *chavePromovida, long *referenciaPromovida,
-           int *filhoDireitaPromovida, RegistroArvoreB *novaPagina, int *proxRRNCabec) {
+           Pagina *pagina, long *chavePromovida, long *referenciaPromovida,
+           int *filhoDireitaPromovida, Pagina *novaPagina, int *proxRRNCabec) {
 
     // Vetores temporários para armazenar chaves, referências e ponteiros da página
     long chaves[ORDEM];
@@ -207,7 +142,7 @@ int inserir(FILE *arqIndice, int RRNAtual, long chave, long referencia,
         return PROMOCAO;
     } else {
 
-                // Armazena a chave promovida do nível inferior, caso ocorra um split
+        // Armazena a chave promovida do nível inferior, caso ocorra um split
         long chavePromovidaNivelInf;
 
         // Armazena a referência associada à chave promovida do nível inferior, usada para acesso rápido ao dado
@@ -218,7 +153,7 @@ int inserir(FILE *arqIndice, int RRNAtual, long chave, long referencia,
 
         // Carrega a página atual para memória a partir do arquivo de índice
         fseek(arqIndice, OFFSET_CABECALHO_ARVB + RRNAtual * TAM_PAGINA, SEEK_SET);
-        RegistroArvoreB *paginaAtual = lePaginaBin(arqIndice);
+        Pagina *paginaAtual = lePaginaBin(arqIndice);
 
         // Encontra a posição correta de inserção
         int pos;
@@ -262,7 +197,7 @@ int inserir(FILE *arqIndice, int RRNAtual, long chave, long referencia,
             return SEM_PROMOCAO;
         } else {
             // Se o nó está cheio, realiza um split
-            RegistroArvoreB *novaPagina = criaPagina();
+            Pagina *novaPagina = criaPagina();
             split(arqIndice, chavePromovidaNivelInf, referenciaPromovidaNivelInf, RRNPromovidoInf,
                   paginaAtual, chavePromovida, referenciaPromovida, filhoDireitaPromovida, novaPagina, proxRRNCabec);
 

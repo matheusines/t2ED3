@@ -21,11 +21,13 @@ void funcionalidade5();
 // Função que realiza a compactação do arquivo binário, removendo fisicamente os registros logicamente removidos.
 void funcionalidade6();
 
-
+// Função que cria um índice árvore-B baseado no campo 'nome' de um arquivo de dados existente.
 void funcionalidade7();
 
+// Função que realiza a busca de registros no arquivo de dados utilizando o índice árvore-B no campo 'nome'.
 void funcionalidade8();
 
+// Função que insere novos registros no arquivo de dados e atualiza o índice árvore-B correspondente com a chave do registro inserido.
 void funcionalidade9();
 
 #endif // FUNCIONALIDADES_H

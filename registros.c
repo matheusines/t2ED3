@@ -1,13 +1,13 @@
     #include <ctype.h>
 #include <string.h>
 #include "funcoesFornecidas.h"
-#include "registro.h"
+#include "registros.h"
 #include "funcoesUteis.h"
-#include "cabecalho.h"
+#include "cabecalhos.h"
 
 #define DELIMITER '#'
 #define TRASH '$'
-#define PAGE_SIZE 1600
+#define PAGE_SIZE_T1 1600
 
 // Função para liberar a memória de um registro
 void liberarRegistro(Registro *reg) {
@@ -439,90 +439,166 @@ void compactarArquivoBinario(FILE *arquivoOriginal, FILE *arquivoCompactado) {
 
     // Atualiza o cabeçalho do novo arquivo com as informações de registros copiados
     header.nroRegRem = 0;  // Após a compactação, não há mais registros removidos
-    header.nroPagDisco = (ftell(arquivoCompactado) + PAGE_SIZE - 1) / PAGE_SIZE;  // Atualiza as páginas de disco
+    header.nroPagDisco = (ftell(arquivoCompactado) + PAGE_SIZE_T1 - 1) / PAGE_SIZE_T1;  // Atualiza as páginas de disco
     // Volta ao início do arquivo para reescrever o cabeçalho
     fseek(arquivoCompactado, 0, SEEK_SET);  
     fwrite(&header, sizeof(Cabecalho), 1, arquivoCompactado);
 }
 
-
-// Updated inserirRegistro to return the byte offset where the record was written
+// Função inserirRegistro atualizada para retornar o byte offset onde o registro foi escrito
 long inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header) {
-    long byteOffset; // Initialize byteOffset variable
+    long byteOffset; // Inicializa a variável byteOffset
 
-    // If there are logically removed records, reuse them
+    // Se existirem registros logicamente removidos, reutiliza-os
     if (header->topo != -1) {
-        int RRNRemovido = header->topo;  // RRN of the top removed record
-        byteOffset = PAGE_SIZE + (RRNRemovido * 160);  // Calculate the byte offset for the removed record
+        int RRNRemovido = header->topo;  // RRN do registro removido no topo da pilha
+        byteOffset = PAGE_SIZE_T1 + (RRNRemovido * 160);  // Calcula o byte offset para o registro removido
         fseek(arquivo, byteOffset, SEEK_SET);
         
-        // Read the removed marker and the next removed position
+        // Lê o marcador de removido e a próxima posição de removido
         char removido;
         int encadeamento;
         fread(&removido, sizeof(char), 1, arquivo);
         fread(&encadeamento, sizeof(int), 1, arquivo);
 
-        // Update the top of the removed records stack
+        // Atualiza o topo da pilha de registros removidos
         header->topo = encadeamento; 
         
-        // Position back at the start of this slot
+        // Posiciona de volta no início desse espaço
         fseek(arquivo, byteOffset, SEEK_SET);
 
-        // Mark the record as valid
+        // Marca o registro como válido
         r->removido = '0';  
         r->encadeamento = -1;
 
-        // Write the new record in the location of the removed record
+        // Escreve o novo registro na posição do registro removido
         escreverRegistro(arquivo, r);
 
-        // Update the header's removed record count
+        // Atualiza a contagem de registros removidos no cabeçalho
         header->nroRegRem--;
         
     } else {
-        // No removed records, append at the end of the file
-        byteOffset = PAGE_SIZE + (header->proxRRN * 160);  // Calculate byte offset for new record
+        // Caso não existam registros removidos, adiciona ao final do arquivo
+        byteOffset = PAGE_SIZE_T1 + (header->proxRRN * 160);  // Calcula o byte offset para o novo registro
         fseek(arquivo, byteOffset, SEEK_SET);
 
-        // Mark the record as valid
+        // Marca o registro como válido
         r->removido = '0';
         r->encadeamento = -1;
 
-        // Write the new record
+        // Escreve o novo registro
         escreverRegistro(arquivo, r);
 
-        // Update the RRN for the next record
+        // Atualiza o RRN para o próximo registro
         header->proxRRN++;
     }
     
-    return byteOffset; // Return the byte offset where the record was written
+    return byteOffset; // Retorna o byte offset onde o registro foi escrito
 }
-//------------------------------------------------------ TRABALHO 2 ------------------------------------------------------ 
 
-// Função para criar um novo RegistroArvoreB com valores padrão
-// A função aloca memória para o registro e inicializa seus campos com valores padrão
-RegistroArvoreB *criarRegistroArvoreB() {
-    // Aloca memória para um novo RegistroArvoreB
-    RegistroArvoreB *novoRegistro = (RegistroArvoreB *) malloc(sizeof(RegistroArvoreB));
-    
-    // Verifica se a alocação de memória foi bem-sucedida
-    if (novoRegistro == NULL) return NULL;
 
-    // Inicializa os valores padrão dos campos do registro
-    novoRegistro->folha = 1;  // Indica que o nó é folha
-    novoRegistro->nroChavesIndexadas = 0;  // Nenhuma chave inicialmente
-    novoRegistro->RRNdoNo = -1;  // Define um valor padrão para o RRN do nó
+/*
 
-    // Inicializa os arrays de chaves e referências com valores padrão
-    for (int i = 0; i < ORDEM - 1; i++) {
-        novoRegistro->chaves[i] = -1;  // Valor padrão de inicialização para as chaves
-        novoRegistro->referencias[i] = -1;  // Valor padrão de inicialização para as referências
-    }
+**************************************************************************************************************************************
+*                                                                                                                                    *
+*                                                             TRABALHO 2                                                             *
+*                                                                                                                                    *
+**************************************************************************************************************************************
 
-    // Inicializa o array de ponteiros com valores padrão
+*/
+
+Pagina *criaPagina() {
+    // Aloca memória para uma nova página (nó da árvore-B) e inicializa seus campos
+    Pagina *novaPagina = (Pagina *)malloc(sizeof(Pagina));
+
+    // Inicializa o número de chaves indexadas para 0, pois a página começa vazia
+    novaPagina->nroChavesIndexadas = 0;
+
+    // Define que a nova página é uma folha, marcando o campo 'folha' com '1'
+    novaPagina->folha = '1'; // Atribui '1' como caractere para indicar que é um nó folha
+
+    // Define o RRN (Registro Relativo) da nova página como -1, indicando que ainda não está atribuída
+    novaPagina->RRNdoNo = -1;
+
+    // Inicializa todos os ponteiros como -1, indicando ausência de subárvores no início
     for (int i = 0; i < ORDEM; i++) {
-        novoRegistro->ponteiros[i] = -1;  // Valor padrão de inicialização para os ponteiros
+        novaPagina->ponteiros[i] = -1;
     }
 
-    // Retorna o ponteiro para o novo registro alocado e inicializado
-    return novoRegistro;
+    // Inicializa as chaves e referências com -1, indicando que ainda não há dados
+    for (int i = 0; i < ORDEM - 1; i++) {
+        novaPagina->chaves[i] = -1;
+        novaPagina->referencias[i] = -1;
+    }
+
+    // Retorna a nova página criada
+    return novaPagina;
+}
+
+
+void escrevePaginaBin(FILE *fp, Pagina *pag) {
+    // Escreve o campo 'folha' da página no arquivo binário
+    fwrite(&pag->folha, sizeof(char), 1, fp);
+
+    // Escreve o número de chaves indexadas no arquivo binário
+    fwrite(&pag->nroChavesIndexadas, sizeof(int), 1, fp);
+
+    // Escreve o RRN do nó no arquivo binário
+    fwrite(&pag->RRNdoNo, sizeof(int), 1, fp);
+    
+    int i;
+    // Loop para escrever os ponteiros, chaves e referências no arquivo binário
+    for(i = 0; i < ORDEM - 1; i++) {
+        // Escreve um ponteiro para uma subárvore
+        fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
+        
+        // Escreve uma chave de busca correspondente no nó
+        fwrite(&pag->chaves[i], sizeof(long), 1, fp);
+        
+        // Escreve a referência associada à chave no arquivo de dados
+        fwrite(&pag->referencias[i], sizeof(long), 1, fp);
+    }
+    
+    // Escreve o último ponteiro após o loop, pois há um total de ORDEM ponteiros
+    fwrite(&pag->ponteiros[i], sizeof(int), 1, fp);
+}
+
+
+Pagina *lePaginaBin(FILE *fp) {
+    // Verifica se o arquivo está disponível para leitura, caso contrário retorna NULL indicando erro
+    if (fp == NULL) return NULL;
+
+    // Cria uma nova página com os campos inicializados
+    Pagina *pag = criaPagina();
+
+    // Tenta ler o campo 'folha'; se não houver mais o que ler, libera a memória e retorna NULL
+    if (fread(&pag->folha, sizeof(char), 1, fp) == 0) {
+        free(pag);
+        return NULL;
+    }
+
+    // Lê o número de chaves indexadas da página
+    fread(&pag->nroChavesIndexadas, sizeof(int), 1, fp);
+
+    // Lê o RRN do nó a partir do arquivo binário
+    fread(&pag->RRNdoNo, sizeof(int), 1, fp);
+
+    int i;
+    // Lê os ponteiros, chaves e referências associadas do arquivo
+    for (i = 0; i < ORDEM - 1; i++) {
+        // Lê um ponteiro para subárvore
+        fread(&pag->ponteiros[i], sizeof(int), 1, fp);
+        
+        // Lê uma chave de busca
+        fread(&pag->chaves[i], sizeof(long), 1, fp);
+        
+        // Lê a referência associada à chave
+        fread(&pag->referencias[i], sizeof(long), 1, fp);
+    }
+    
+    // Lê o último ponteiro após o loop, pois há um total de ORDEM ponteiros
+    fread(&pag->ponteiros[i], sizeof(int), 1, fp);
+
+    // Retorna a página preenchida com os dados lidos do arquivo binário
+    return pag;
 }

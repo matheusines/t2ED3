@@ -1,11 +1,11 @@
 #include <ctype.h>            
 #include <string.h>           
 #include "funcoesFornecidas.h" 
-#include "cabecalho.h"        
+#include "cabecalhos.h"        
 
 #define DELIMITER '#'         // Define um delimitador, que pode ser usado em outra parte do código
 #define TRASH '$'             // Define o caractere de lixo, utilizado para preencher o espaço vazio no cabeçalho
-#define PAGE_SIZE 1600        // Define o tamanho da página de disco, com 1600 bytes
+#define PAGE_SIZE_T1 1600        // Define o tamanho da página de disco, com 1600 bytes
 
 // Função para inicializar os campos do cabeçalho com valores padrão
 Cabecalho inicializarCabecalho() {
@@ -53,42 +53,50 @@ void lerCabecalhoBin(FILE *fp, Cabecalho *header) {
     
     // Calcula a posição atual do arquivo e pula os bytes de lixo restantes
     long int currentPos = ftell(fp);                      // Obtém a posição atual no arquivo
-    long int endOfHeaderPage = PAGE_SIZE;                 // Define o final da página (1600 bytes)
+    long int endOfHeaderPage = PAGE_SIZE_T1;                 // Define o final da página (1600 bytes)
     fseek(fp, endOfHeaderPage - currentPos, SEEK_CUR);    // Move o ponteiro do arquivo para pular o lixo
 }
 
-//--------------------------------------------------------------TRABALHO 2--------------------------------------------------------------
+/*
+
+**************************************************************************************************************************************
+*                                                                                                                                    *
+*                                                             TRABALHO 2                                                             *
+*                                                                                                                                    *
+**************************************************************************************************************************************
+
+*/
 
 
-CabecalhoArvoreB inicializarCabecalhoArvoreB() {
-    CabecalhoArvoreB headerArvoreB;          // Criação da estrutura de cabeçalho
+
+CabecalhoIndice inicializarCabecalhoIndice() {
+    CabecalhoIndice headerArvoreB;          // Criação da estrutura de cabeçalho do arquivo de indice
     headerArvoreB.status = '0';       // Status '0' indica que o arquivo está inconsistente
-    headerArvoreB.noRaiz = -1;
-    headerArvoreB.RRNproxNo = 0;
+    headerArvoreB.noRaiz = -1;      //Como não há nós no novo cabeçalho, o nó raiz recebe -1
+    headerArvoreB.RRNproxNo = 0;    //RRN do primeiro nó a ser inserido
     return headerArvoreB;             // Retorna o cabeçalho inicializado
 }
 
-// Função para escrever o cabeçalho em um arquivo binário
-void escreverCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *header) {
+// Função para escrever o cabeçalho indice em um arquivo binário
+void escreverCabecalhoIndice(FILE *fp, CabecalhoIndice *header) {
     if (fp == NULL) return;    // Verifica se o ponteiro do arquivo é válido
 
     // Escreve os campos do cabeçalho no arquivo binário
-    
     fwrite(&header->status, sizeof(char), 1, fp);         
     fwrite(&header->noRaiz, sizeof(int), 1, fp);
     fwrite(&header->RRNproxNo, sizeof(int), 1, fp);            
 
     // Preenche o restante da página de 84 bytes com lixo (caractere '$')
     char lixo = TRASH;
-    for (int i = 0; i < 84; i++) {   // 1600 - tamanho dos campos já escritos = 1579 bytes de lixo
+    for (int i = 0; i < 84; i++) {   // 93 - tamanho dos campos já escritos = 84 bytes de lixo
         fwrite(&lixo, sizeof(char), 1, fp);
     }
 }
 
-void lerCabecalhoArvoreB(FILE *fp, CabecalhoArvoreB *cabecalho) {
+void lerCabecalhoIndice(FILE *fp, CabecalhoIndice *cabecalho) {
     if (fp == NULL) return; // erro
 
-    // Ler os campos do cabeçalho
+    // Lê os campos do cabeçalho
     fread(&cabecalho->status, sizeof(char), 1, fp);
     fread(&cabecalho->noRaiz, sizeof(int), 1, fp);
     fread(&cabecalho->RRNproxNo, sizeof(int), 1, fp);

@@ -2,7 +2,7 @@
 #include <ctype.h>
 #include <string.h>
 #include "funcoesFornecidas.h"
-#include "cabecalho.h"
+#include "cabecalhos.h"
 
 #define DELIMITER '#'
 #define TRASH '$'

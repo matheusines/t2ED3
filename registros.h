@@ -1,10 +1,10 @@
-#ifndef REGISTRO_H
-#define REGISTRO_H
+#ifndef REGISTROS_H
+#define REGISTROS_H
 #include <stdio.h>
 #include <stdlib.h>
-#include "cabecalho.h"
+#include "cabecalhos.h"
 
-#define ORDEM 5
+#define TAM_PAGINA 93
 
 typedef struct {
     // Campos de tamanho fixo
@@ -22,18 +22,6 @@ typedef struct {
     char *dieta;            // Dieta da espécie
     char *alimento;         // Alimento da espécie
 } Registro;
-
-typedef struct  {
-    
-    char folha;
-    int nroChavesIndexadas;
-    int RRNdoNo;
-    int ponteiros [ORDEM+1];
-    long chaves [ORDEM];
-    long referencias [ORDEM];
-
-} RegistroArvoreB;
-
 
 /**
  * Função para liberar a memória alocada para as strings do registro e o próprio registro.
@@ -94,7 +82,7 @@ void removeRegistro(Registro *r, FILE *arquivoBin, int topo, long int byteOffset
 /**
  * Função para inserir um registro no arquivo binário.
  * Reutiliza o espaço de registros removidos, se disponível, ou adiciona no final.
- * @param df Ponteiro para o arquivo binário onde o registro será inserido.
+ * @param arquivo Ponteiro para o arquivo binário onde o registro será inserido.
  * @param r Ponteiro para o registro a ser inserido.
  * @param header Cabeçalho do arquivo binário que será atualizado.
  */
@@ -108,5 +96,51 @@ long inserirRegistro(FILE *arquivo, Registro *r, Cabecalho *header);
 void compactarArquivoBinario(FILE *arquivoOriginal, FILE *arquivoCompactado);
 
 
+
+/*
+
+**************************************************************************************************************************************
+*                                                                                                                                    *
+*                                                             TRABALHO 2                                                             *
+*                                                                                                                                    *
+**************************************************************************************************************************************
+
+*/
+
+#define ORDEM 5
+
+typedef struct {
+
+    char folha;                // Indica se o nó é folha ou não. Valores possíveis: 0 (não é folha) e 1 (é folha).
+    int nroChavesIndexadas;    // Armazena o número de chaves de busca atualmente indexadas no nó.
+    int RRNdoNo;               // Número do Registro Relativo (RRN) do nó, que é o identificador do nó no arquivo.
+    int ponteiros[ORDEM+1];    // Array de ponteiros para subárvores, cada um representado por um valor de RRN. 
+                               // Ponteiros vazios são representados por -1.
+    long chaves[ORDEM];        // Array de chaves de busca armazenadas no nó, ordenadas. Chaves vazias são representadas por -1.
+    long referencias[ORDEM];   // Array de referências para registros de dados no arquivo principal, correspondendo às chaves.
+
+} Pagina;
+
+/**
+ * Função para criar uma nova página, inicializando os campos com valores padrão
+ * @return Ponteiro para a nova página ou NULL em caso de erro.
+ */
+Pagina *criaPagina();
+
+/**
+ * Função para escrever uma pagina no arquivo indice.
+ * Escreve todos os campos da pagina
+ * @param fp Ponteiro para o arquivo indice.
+ * @param pag Ponteiro para a página que será escrita.
+ */
+void escrevePaginaBin(FILE *fp, Pagina *pag);
+
+
+/**
+ * Função para ler uma pagina de um arquivo indice.
+ * @param fp Ponteiro para o arquivo indice.
+ * @return Ponteiro para a pagina lida, ou NULL em caso de erro ou fim de arquivo.
+ */
+Pagina *lePaginaBin(FILE *fp);
 
 #endif
